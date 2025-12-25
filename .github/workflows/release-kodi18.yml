@@ -16,17 +16,6 @@ jobs:
       contents: write
 
     steps:
-      - name: Release Status
-        id: release
-        run: |
-          version=${GITHUB_REF/refs\/tags\//}
-          if [[ $version == *[-+]@(alpha|beta|dev)*([.0-9a-z]) ]] ;
-          then
-            echo "pre-release=true" >> $GITHUB_OUTPUT
-          else
-            echo "pre-release=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Checkout Add-on
         uses: actions/checkout@v4
         with:
@@ -36,17 +25,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install libxml2-utils xmlstarlet zip
-
-      - name: Get Changelog
-        id: changelog
-        run: |
-          readarray -t changes < <(awk '/^## /{rel_num++} {if(rel_num==2){exit} if(rel_num==1){print}}' changelog.txt)
-          echo "body<<${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
-          for change in "${changes[@]}"; do
-              echo "${change}" >> $GITHUB_OUTPUT
-          done
-          echo "${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.event.repository.name }}
 
       - name: Create Zip (Leia)
         id: zip-leia
