@@ -852,7 +852,7 @@
                             </or>
                         </dependency>
                     </dependencies>
-                    <control type="colorbutton"/>
+                    <control type="button" format="string"/>
                 </setting>
                 <setting id="youtube.view.label.color.likeCount" type="string" parent="youtube.view.label.details" label="30794" help="">
                     <level>0</level>
@@ -868,7 +868,7 @@
                             </or>
                         </dependency>
                     </dependencies>
-                    <control type="colorbutton"/>
+                    <control type="button" format="string"/>
                 </setting>
                 <setting id="youtube.view.label.color.commentCount" type="string" parent="youtube.view.label.details" label="30795" help="">
                     <level>0</level>
@@ -884,7 +884,7 @@
                             </or>
                         </dependency>
                     </dependencies>
-                    <control type="colorbutton"/>
+                    <control type="button" format="string"/>
                 </setting>
                 <setting id="kodion.thumbnail.size" type="integer" label="30591" help="">
                     <level>0</level>
