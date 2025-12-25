@@ -35,7 +35,7 @@ from .constants import (
 from .context import XbmcContext
 from .monitors import PlayerMonitor, ServiceMonitor
 from .utils.file_system import rm_dir
-from ..youtube.provider import Provider
+from ..youtube import Provider
 
 
 __all__ = ('run',)
