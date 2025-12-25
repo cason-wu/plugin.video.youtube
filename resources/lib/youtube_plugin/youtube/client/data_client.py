@@ -19,8 +19,16 @@ from re import compile as re_compile
 from xml.etree.ElementTree import (
     Element as ET_Element,
     XML as ET_XML,
-    XMLPullParser as ET_XMLPullParser,
 )
+
+# XMLPullParser is not available in Python 2.7 versions older than 2.7.8
+# Provide a fallback for older systems (e.g., embedded devices)
+try:
+    from xml.etree.ElementTree import XMLPullParser as ET_XMLPullParser
+    HAS_XMLPULLPARSER = True
+except ImportError:
+    ET_XMLPullParser = None
+    HAS_XMLPULLPARSER = False
 
 from .login_client import YouTubeLoginClient
 from ..helper.v3 import pre_fill
@@ -2447,7 +2455,7 @@ class YouTubeDataClient(YouTubeLoginClient):
                     content = None
                 elif response.status_code == 429:
                     return False, True
-                elif stream:
+                elif stream and HAS_XMLPULLPARSER:
                     parser = ET_XMLPullParser(('start',))
                     for chunk in response.iter_content(chunk_size=(8 * 1024)):
                         if chunk:
