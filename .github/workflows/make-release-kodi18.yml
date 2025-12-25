@@ -79,41 +79,6 @@ jobs:
           echo "filename=$filename" >> $GITHUB_OUTPUT
         working-directory: ${{ github.event.repository.name }}
 
-      - name: Create Zip (Leia-Unofficial)
-        id: zip-unofficial-leia
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git reset --hard ${{ github.sha }}
-          git checkout .
-          git fetch origin nexus-unofficial
-          git -c user.email="\<\>" -c user.name="make-release" merge -X theirs --allow-unrelated-histories origin/nexus-unofficial
-          git clean -fdx
-          mv .git ..
-          rm -rf .??*
-          rm *.md
-          news=$(awk '/^## /{rel_num++} {if(rel_num==2){exit} if(rel_num==1){print}}' changelog.txt | sed -E 's/ ?#[[:digit:]]+[., ]?//g;s/\r//')
-          version=$(xmlstarlet sel -t -v 'string(/addon/@version)' addon.xml)
-          version="${version}+leia.unofficial.1"
-          version=${version/+/!}; version=${version//+/.}; version=${version/!/+}
-          xmlstarlet ed -L -P \
-            -s '/addon/extension[@point="xbmc.addon.metadata"]' -t elem -n news -v "${news:0:1500}" \
-            -u '/addon/@version' -v "${version}" \
-            -u '/addon/requires/import[@addon="xbmc.python"]/@version' -v '2.26.0' \
-            -d '/addon/requires/import[@addon="script.module.requests"]/@version' \
-            -d '/addon/requires/import[@addon="inputstream.adaptive"]/@version' \
-            -d '/addon/requires/import[@addon="script.module.inputstreamhelper"]/@version' \
-            -s '/addon/requires' -t elem -n import_temp \
-            -s '/addon/requires/import_temp' -t attr -n addon -v 'script.module.kodi-six' \
-            -r '/addon/requires/import_temp' -v import \
-            addon.xml
-          filename=${{ github.event.repository.name }}-${version}.zip
-          cd ..
-          zip -r $filename ${{ github.event.repository.name }}
-          mv .git ${{ github.event.repository.name }}
-          echo "filename=$filename" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.event.repository.name }}
-
       - name: Create Release
         id: create-release
         uses: actions/create-release@v1
@@ -135,15 +100,4 @@ jobs:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_name: ${{ steps.zip-leia.outputs.filename }}
           asset_path: ${{ steps.zip-leia.outputs.filename }}
-          asset_content_type: application/zip
-
-      - name: Upload Zip (Leia-Unofficial)
-        id: upload-unofficial-leia
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_name: ${{ steps.zip-unofficial-leia.outputs.filename }}
-          asset_path: ${{ steps.zip-unofficial-leia.outputs.filename }}
           asset_content_type: application/zip
