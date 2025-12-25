@@ -41,11 +41,11 @@ jobs:
         id: changelog
         run: |
           readarray -t changes < <(awk '/^## /{rel_num++} {if(rel_num==2){exit} if(rel_num==1){print}}' changelog.txt)
-          echo "body<<${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
+          echo "body<<EOF_CHANGELOG" >> $GITHUB_OUTPUT
           for change in "${changes[@]}"; do
               echo "${change}" >> $GITHUB_OUTPUT
           done
-          echo "${{ secrets.GITHUB_TOKEN }}" >> $GITHUB_OUTPUT
+          echo "EOF_CHANGELOG" >> $GITHUB_OUTPUT
         working-directory: ${{ github.event.repository.name }}
 
       - name: Create Zip (Leia)
