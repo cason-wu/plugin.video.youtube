@@ -21,6 +21,8 @@ def redact_ip_in_uri(
         url,
         _re=re_compile(r'([?&/]|%3F|%26|%2F)ip([=/]|%3D|%2F)[^?&/%]+'),
 ):
+    if not url:
+        return url
     return _re.sub(r'\g<1>ip\g<2><redacted>', url)
 
 
@@ -38,6 +40,8 @@ def redact_auth_header(headers,
 
 
 def redact_license_info(license_info):
+    if not license_info:
+        return license_info
     license_info = license_info.copy()
     for detail in ('url', 'token'):
         if detail in license_info:
@@ -57,31 +61,41 @@ def redact_params(params, _seq_types=(list, tuple)):
                      'api_secret',
                      API_SECRET,
                      'client_secret'}:
-            log_value = (
-                ['...'.join((val[:3], val[-3:]))
-                 if len(val) > 9 else
-                 '...'
-                 for val in value]
-                if isinstance(value, _seq_types) else
-                '...'.join((value[:3], value[-3:]))
-                if len(value) > 9 else
-                '...'
-            )
+            if isinstance(value, _seq_types):
+                log_value = [
+                    '...'.join((val[:3], val[-3:]))
+                    if val and len(val) > 9 else
+                    '...'
+                    for val in value
+                ]
+            elif value:
+                log_value = (
+                    '...'.join((value[:3], value[-3:]))
+                    if len(value) > 9 else
+                    '...'
+                )
+            else:
+                log_value = '<redacted>'
         elif param in {'api_id', API_ID, 'client_id'}:
             if isinstance(value, _seq_types):
                 log_value = []
                 for val in value:
-                    val = val.replace('.apps.googleusercontent.com', '')
-                    if len(val) > 11:
-                        log_value.append('...'.join((val[:3], val[-5:])))
+                    if val:
+                        val = val.replace('.apps.googleusercontent.com', '')
+                        if len(val) > 11:
+                            log_value.append('...'.join((val[:3], val[-5:])))
+                        else:
+                            log_value.append('...')
                     else:
                         log_value.append('...')
-            else:
+            elif value:
                 log_value = value.replace('.apps.googleusercontent.com', '')
                 if len(log_value) > 11:
                     log_value = '...'.join((log_value[:3], log_value[-5:]))
                 else:
                     log_value = '...'
+            else:
+                log_value = '<redacted>'
         elif param in {'access_token',
                        'code',
                        'ip',
