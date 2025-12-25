@@ -50,28 +50,44 @@ class SettingsProxy(object):
 
     else:
         def get_bool(self, *args, **kwargs):
+            if self.ref is None:
+                raise RuntimeError('Settings reference is None')
             return self.ref.getSettingBool(*args, **kwargs)
 
         def set_bool(self, *args, **kwargs):
+            if self.ref is None:
+                raise RuntimeError('Settings reference is None')
             return self.ref.setSettingBool(*args, **kwargs)
 
         def get_int(self, *args, **kwargs):
+            if self.ref is None:
+                raise RuntimeError('Settings reference is None')
             return self.ref.getSettingInt(*args, **kwargs)
 
         def set_int(self, *args, **kwargs):
+            if self.ref is None:
+                raise RuntimeError('Settings reference is None')
             return self.ref.setSettingInt(*args, **kwargs)
 
         def get_str(self, *args, **kwargs):
+            if self.ref is None:
+                raise RuntimeError('Settings reference is None')
             return self.ref.getSettingString(*args, **kwargs)
 
         def set_str(self, *args, **kwargs):
+            if self.ref is None:
+                raise RuntimeError('Settings reference is None')
             return self.ref.setSettingString(*args, **kwargs)
 
         def get_str_list(self, setting):
+            if self.ref is None:
+                raise RuntimeError('Settings reference is None')
             value = self.ref.getSetting(setting)
             return value.split(',') if value else []
 
         def set_str_list(self, setting, value):
+            if self.ref is None:
+                raise RuntimeError('Settings reference is None')
             value = ','.join(value)
             return self.ref.setSetting(setting, value)
 

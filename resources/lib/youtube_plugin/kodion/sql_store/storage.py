@@ -291,7 +291,10 @@ class Storage(object):
         self._max_file_size_kb = max_file_size_kb
 
     def __del__(self):
-        self._close(event='deleted')
+        # During interpreter shutdown, methods may become None
+        # Check if _close is still available before calling
+        if self._close is not None:
+            self._close(event='deleted')
 
     def __enter__(self):
         self._lock.accessing(start=True)
