@@ -1,3 +1,14 @@
+## v7.4.0+beta.2.kodi18
+### Changed
+- Backport to Kodi 18 (Leia) with Python 2.7 support
+- Updated xbmc.python requirement to 2.25.0 for Kodi 18 compatibility
+- Updated dependencies to Kodi 18 compatible versions:
+  - script.module.requests 2.21.0
+  - inputstream.adaptive 2.4.3
+- Added script.module.kodi-six dependency for Python 2/3 compatibility
+- Added missing `from __future__` imports to ensure Python 2/3 compatibility
+- Updated README and added KODI18_MIGRATION.md documentation
+
 ## v7.4.0+beta.2
 ### Fixed
 - Fix retrieving items from local history database #1356
