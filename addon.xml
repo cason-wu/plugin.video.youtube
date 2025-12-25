@@ -2,7 +2,7 @@
 <addon id="plugin.video.youtube" name="YouTube" version="7.4.0+beta.2.kodi18" provider-name="anxdpanic, bromix, MoojMidge">
     <requires>
         <import addon="xbmc.python" version="2.25.0"/>
-        <import addon="script.module.kodi-six" />
+        <import addon="script.module.kodi-six" version="0.1.0"/>
         <import addon="script.module.requests" version="2.21.0"/>
         <import addon="inputstream.adaptive" version="2.4.3"/>
         <import addon="script.module.inputstreamhelper" version="0.2.2" optional="true"/>
