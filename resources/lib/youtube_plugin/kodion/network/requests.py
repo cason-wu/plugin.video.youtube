@@ -66,7 +66,7 @@ if not _urllib3_detected:
             _requests_version = tuple(map(int, version_match.groups()))
             _use_method_whitelist = _requests_version < (2, 25)
             # Keep urllib3 error if it was set, otherwise clear the error
-            if not _urllib3_error:
+            if _urllib3_error is None:
                 _version_detection_error = None
         else:
             # Could not parse requests version, use default
@@ -184,7 +184,7 @@ class CustomSession(Session):
         retry_kwargs = {
             'total': 3,
             'backoff_factor': 0.1,
-            'status_forcelist': {500, 502, 503, 504},
+            'status_forcelist': [500, 502, 503, 504],
         }
         # urllib3 < 1.26 uses 'method_whitelist', >= 1.26 uses 'allowed_methods'
         if _use_method_whitelist:
