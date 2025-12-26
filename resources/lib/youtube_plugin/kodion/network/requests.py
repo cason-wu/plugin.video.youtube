@@ -36,6 +36,7 @@ from ..utils.methods import generate_hash
 # urllib3 >= 1.26 uses 'allowed_methods'
 _use_method_whitelist = True  # Default for Python 2.7/Kodi 18 compatibility
 _version_detection_error = None
+_urllib3_detection_failed = False
 
 try:
     import urllib3
@@ -46,13 +47,17 @@ try:
         major, minor, patch = version_match.groups()
         _urllib3_version = (int(major), int(minor), int(patch) if patch else 0)
         _use_method_whitelist = _urllib3_version < (1, 26, 0)
+        _version_detection_error = None
     else:
+        # Could not parse urllib3 version, will try requests version next
         _version_detection_error = 'Could not parse urllib3 version "{0}" - expected format major.minor[.patch]'.format(urllib3.__version__)
-        raise ValueError(_version_detection_error)
-except (ImportError, ValueError, AttributeError):
-    # If we can't determine the version, try to detect based on requests version
-    # requests < 2.25 (including 2.21.0 for Kodi 18) uses urllib3 < 1.26 which needs method_whitelist
-    # requests >= 2.25 can use urllib3 >= 1.26 which needs allowed_methods
+        _urllib3_detection_failed = True
+except (ImportError, AttributeError):
+    # urllib3 not available or version not accessible, will try requests version
+    _urllib3_detection_failed = True
+
+# If urllib3 version detection failed or urllib3 not available, try requests version
+if _urllib3_detection_failed:
     try:
         import requests
         # Extract major.minor for requests version (patch version not significant for this check)
@@ -62,11 +67,10 @@ except (ImportError, ValueError, AttributeError):
             _use_method_whitelist = _requests_version < (2, 25)
             _version_detection_error = None  # Successfully detected from requests
         else:
+            # Could not parse requests version, use default
             _version_detection_error = 'Could not parse requests version "{0}" - expected format major.minor[.patch]'.format(requests.__version__)
-            raise ValueError(_version_detection_error)
-    except (ImportError, ValueError, AttributeError):
-        # Default to method_whitelist for Python 2.7/Kodi 18 compatibility
-        # This is already set above
+    except (ImportError, AttributeError):
+        # requests not available, use default (already set above)
         pass
 
 
