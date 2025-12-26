@@ -36,7 +36,7 @@ from ..utils.methods import generate_hash
 # urllib3 >= 1.26 uses 'allowed_methods'
 _use_method_whitelist = True  # Default for Python 2.7/Kodi 18 compatibility
 _version_detection_error = None
-_urllib3_detection_failed = False
+_urllib3_detected = False
 
 try:
     import urllib3
@@ -47,17 +47,17 @@ try:
         major, minor, patch = version_match.groups()
         _urllib3_version = (int(major), int(minor), int(patch) if patch else 0)
         _use_method_whitelist = _urllib3_version < (1, 26, 0)
-        _version_detection_error = None
+        _urllib3_detected = True
     else:
         # Could not parse urllib3 version, will try requests version next
         _version_detection_error = 'Could not parse urllib3 version "{0}" - expected format major.minor[.patch]'.format(urllib3.__version__)
-        _urllib3_detection_failed = True
 except (ImportError, AttributeError):
     # urllib3 not available or version not accessible, will try requests version
-    _urllib3_detection_failed = True
+    pass
 
-# If urllib3 version detection failed or urllib3 not available, try requests version
-if _urllib3_detection_failed:
+# If urllib3 version detection failed or not available, try requests version as fallback
+if not _urllib3_detected:
+    _urllib3_error = _version_detection_error  # Preserve urllib3 error if any
     try:
         import requests
         # Extract major.minor for requests version (patch version not significant for this check)
@@ -65,12 +65,17 @@ if _urllib3_detection_failed:
         if version_match:
             _requests_version = tuple(map(int, version_match.groups()))
             _use_method_whitelist = _requests_version < (2, 25)
-            _version_detection_error = None  # Successfully detected from requests
+            # Keep urllib3 error if it was set, otherwise clear the error
+            if not _urllib3_error:
+                _version_detection_error = None
         else:
             # Could not parse requests version, use default
             _version_detection_error = 'Could not parse requests version "{0}" - expected format major.minor[.patch]'.format(requests.__version__)
+            if _urllib3_error:
+                _version_detection_error = _urllib3_error + '; ' + _version_detection_error
     except (ImportError, AttributeError):
         # requests not available, use default (already set above)
+        # Keep the urllib3 error if it was set
         pass
 
 
