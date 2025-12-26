@@ -182,6 +182,8 @@ class RequestHandler(BaseHTTPRequestHandler, object):
         except (HTTPError, IncompleteRead, ProtocolError, OSError) as exc:
             self.close_connection = True
             self.log.exception('Request failed')
+            # Explicitly check for urllib3 exceptions due to inconsistent
+            # exception re-raising behavior across urllib3 versions
             if (isinstance(exc, (HTTPError, IncompleteRead, ProtocolError))
                     or getattr(exc, 'errno', None) in self.SWALLOWED_ERRORS):
                 return
