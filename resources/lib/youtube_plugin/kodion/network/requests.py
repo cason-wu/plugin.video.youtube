@@ -9,6 +9,7 @@
 
 from __future__ import absolute_import, division, unicode_literals
 
+import re
 import socket
 from atexit import register as atexit_register
 from collections import OrderedDict
@@ -29,6 +30,53 @@ from urllib3.util.ssl_ import create_urllib3_context
 from .. import logging
 from ..utils.datetime import imf_fixdate
 from ..utils.methods import generate_hash
+
+# Determine which Retry parameter to use based on urllib3 version
+# urllib3 < 1.26 uses 'method_whitelist'
+# urllib3 >= 1.26 uses 'allowed_methods'
+_use_method_whitelist = True  # Default for Python 2.7/Kodi 18 compatibility
+_version_detection_error = None
+_urllib3_detected = False
+
+try:
+    import urllib3
+    # Extract only numeric parts to handle pre-release versions (e.g., '1.26.0rc1')
+    # Match at least major.minor, optionally patch
+    version_match = re.match(r'(\d+)\.(\d+)(?:\.(\d+))?', urllib3.__version__)
+    if version_match:
+        major, minor, patch = version_match.groups()
+        _urllib3_version = (int(major), int(minor), int(patch) if patch else 0)
+        _use_method_whitelist = _urllib3_version < (1, 26, 0)
+        _urllib3_detected = True
+    else:
+        # Could not parse urllib3 version, will try requests version next
+        _version_detection_error = 'Could not parse urllib3 version "{0}" - expected format major.minor[.patch]'.format(urllib3.__version__)
+except (ImportError, AttributeError):
+    # urllib3 not available or version not accessible, will try requests version
+    pass
+
+# If urllib3 version detection failed or not available, try requests version as fallback
+if not _urllib3_detected:
+    _urllib3_error = _version_detection_error  # Preserve urllib3 error if any
+    try:
+        import requests
+        # Extract major.minor for requests version (patch version not significant for this check)
+        version_match = re.match(r'(\d+)\.(\d+)', requests.__version__)
+        if version_match:
+            _requests_version = tuple(map(int, version_match.groups()))
+            _use_method_whitelist = _requests_version < (2, 25)
+            # Keep urllib3 error if it was set, otherwise clear the error
+            if _urllib3_error is None:
+                _version_detection_error = None
+        else:
+            # Could not parse requests version, use default
+            _version_detection_error = 'Could not parse requests version "{0}" - expected format major.minor[.patch]'.format(requests.__version__)
+            if _urllib3_error:
+                _version_detection_error = _urllib3_error + '; ' + _version_detection_error
+    except (ImportError, AttributeError):
+        # requests not available, use default (already set above)
+        # Keep the urllib3 error if it was set
+        pass
 
 
 __all__ = (
@@ -132,15 +180,22 @@ class CustomSession(Session):
 
         # Default connection adapters.
         self.adapters = OrderedDict()
+        # Configure Retry with proper parameter for urllib3 version compatibility
+        retry_kwargs = {
+            'total': 3,
+            'backoff_factor': 0.1,
+            'status_forcelist': [500, 502, 503, 504],
+        }
+        # urllib3 < 1.26 uses 'method_whitelist', >= 1.26 uses 'allowed_methods'
+        if _use_method_whitelist:
+            retry_kwargs['method_whitelist'] = None
+        else:
+            retry_kwargs['allowed_methods'] = None
+
         self.mount('https://', SSLHTTPAdapter(
             pool_maxsize=20,
             pool_block=True,
-            max_retries=Retry(
-                total=3,
-                backoff_factor=0.1,
-                status_forcelist={500, 502, 503, 504},
-                allowed_methods=None,
-            )
+            max_retries=Retry(**retry_kwargs)
         ))
         self.mount('http://', HTTPAdapter())
 
@@ -156,6 +211,7 @@ class BaseRequestsClass(object):
     _timeout = (9.5, 27)
     _proxy = None
     _default_exc = (RequestException,)
+    _version_warning_logged = False
 
     METHODS_TO_CACHE = {'GET', 'HEAD'}
 
@@ -188,6 +244,13 @@ class BaseRequestsClass(object):
              timeout=None,
              proxy_settings=None,
              **_kwargs):
+        # Log version detection error once if any
+        if _version_detection_error and not cls._version_warning_logged:
+            cls.log.debug('Retry parameter version detection: {0}, '
+                          'using default method_whitelist for compatibility',
+                          _version_detection_error)
+            cls._version_warning_logged = True
+        
         cls._context = (cls._context
                         if context is None else
                         context)
