@@ -44,7 +44,7 @@ try:
         _urllib3_version = (int(major), int(minor), int(patch) if patch else 0)
         _use_method_whitelist = _urllib3_version < (1, 26, 0)
     else:
-        raise ValueError('Could not parse urllib3 version')
+        raise ValueError('Could not parse urllib3 version: {0}'.format(urllib3.__version__))
 except (ImportError, ValueError, AttributeError):
     # If we can't determine the version, try to detect based on requests version
     # requests < 2.25 (including 2.21.0 for Kodi 18) uses urllib3 < 1.26 which needs method_whitelist
@@ -57,7 +57,7 @@ except (ImportError, ValueError, AttributeError):
             _requests_version = tuple(map(int, version_match.groups()))
             _use_method_whitelist = _requests_version < (2, 25)
         else:
-            raise ValueError('Could not parse requests version')
+            raise ValueError('Could not parse requests version: {0}'.format(requests.__version__))
     except (ImportError, ValueError, AttributeError):
         # Default to method_whitelist for Python 2.7/Kodi 18 compatibility
         _use_method_whitelist = True
