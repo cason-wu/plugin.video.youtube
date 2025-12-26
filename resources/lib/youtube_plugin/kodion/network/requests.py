@@ -30,6 +30,24 @@ from .. import logging
 from ..utils.datetime import imf_fixdate
 from ..utils.methods import generate_hash
 
+# Determine which Retry parameter to use based on urllib3 version
+# urllib3 < 1.26 uses 'method_whitelist'
+# urllib3 >= 1.26 uses 'allowed_methods'
+try:
+    import urllib3
+    _urllib3_version = tuple(map(int, urllib3.__version__.split('.')))
+    _use_method_whitelist = _urllib3_version < (1, 26, 0)
+except (ImportError, ValueError, AttributeError):
+    # If we can't determine the version, try to detect based on requests version
+    # requests 2.21.0 (Kodi 18) uses urllib3 ~1.24-1.25 which needs method_whitelist
+    try:
+        import requests
+        _requests_version = tuple(map(int, requests.__version__.split('.')[:2]))
+        _use_method_whitelist = _requests_version < (2, 26)
+    except (ImportError, ValueError, AttributeError):
+        # Default to method_whitelist for Python 2.7/Kodi 18 compatibility
+        _use_method_whitelist = True
+
 
 __all__ = (
     'BaseRequestsClass',
@@ -132,15 +150,22 @@ class CustomSession(Session):
 
         # Default connection adapters.
         self.adapters = OrderedDict()
+        # Configure Retry with proper parameter for urllib3 version compatibility
+        retry_kwargs = {
+            'total': 3,
+            'backoff_factor': 0.1,
+            'status_forcelist': {500, 502, 503, 504},
+        }
+        # urllib3 < 1.26 uses 'method_whitelist', >= 1.26 uses 'allowed_methods'
+        if _use_method_whitelist:
+            retry_kwargs['method_whitelist'] = None
+        else:
+            retry_kwargs['allowed_methods'] = None
+        
         self.mount('https://', SSLHTTPAdapter(
             pool_maxsize=20,
             pool_block=True,
-            max_retries=Retry(
-                total=3,
-                backoff_factor=0.1,
-                status_forcelist={500, 502, 503, 504},
-                allowed_methods=None,
-            )
+            max_retries=Retry(**retry_kwargs)
         ))
         self.mount('http://', HTTPAdapter())
 
