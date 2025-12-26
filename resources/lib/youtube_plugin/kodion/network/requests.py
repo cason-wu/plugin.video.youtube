@@ -47,7 +47,7 @@ try:
         _urllib3_version = (int(major), int(minor), int(patch) if patch else 0)
         _use_method_whitelist = _urllib3_version < (1, 26, 0)
     else:
-        _version_detection_error = 'Could not parse urllib3 version: {0}'.format(urllib3.__version__)
+        _version_detection_error = 'Could not parse urllib3 version "{0}" - expected format major.minor[.patch]'.format(urllib3.__version__)
         raise ValueError(_version_detection_error)
 except (ImportError, ValueError, AttributeError):
     # If we can't determine the version, try to detect based on requests version
@@ -62,7 +62,7 @@ except (ImportError, ValueError, AttributeError):
             _use_method_whitelist = _requests_version < (2, 25)
             _version_detection_error = None  # Successfully detected from requests
         else:
-            _version_detection_error = 'Could not parse requests version: {0}'.format(requests.__version__)
+            _version_detection_error = 'Could not parse requests version "{0}" - expected format major.minor[.patch]'.format(requests.__version__)
             raise ValueError(_version_detection_error)
     except (ImportError, ValueError, AttributeError):
         # Default to method_whitelist for Python 2.7/Kodi 18 compatibility
@@ -182,7 +182,7 @@ class CustomSession(Session):
             retry_kwargs['method_whitelist'] = None
         else:
             retry_kwargs['allowed_methods'] = None
-        
+
         self.mount('https://', SSLHTTPAdapter(
             pool_maxsize=20,
             pool_block=True,
