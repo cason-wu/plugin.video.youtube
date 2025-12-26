@@ -194,12 +194,6 @@ class CustomSession(Session):
 class BaseRequestsClass(object):
     log = logging.getLogger(__name__)
 
-    # Log version detection error if any
-    if _version_detection_error:
-        log.debug('Retry parameter version detection: {0}, '
-                  'using default method_whitelist for compatibility',
-                  _version_detection_error)
-
     _session = CustomSession()
     atexit_register(_session.close)
 
@@ -208,6 +202,7 @@ class BaseRequestsClass(object):
     _timeout = (9.5, 27)
     _proxy = None
     _default_exc = (RequestException,)
+    _version_warning_logged = False
 
     METHODS_TO_CACHE = {'GET', 'HEAD'}
 
@@ -240,6 +235,13 @@ class BaseRequestsClass(object):
              timeout=None,
              proxy_settings=None,
              **_kwargs):
+        # Log version detection error once if any
+        if _version_detection_error and not cls._version_warning_logged:
+            cls.log.debug('Retry parameter version detection: {0}, '
+                          'using default method_whitelist for compatibility',
+                          _version_detection_error)
+            cls._version_warning_logged = True
+        
         cls._context = (cls._context
                         if context is None else
                         context)
