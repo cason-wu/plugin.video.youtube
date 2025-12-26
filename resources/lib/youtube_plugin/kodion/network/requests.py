@@ -34,6 +34,9 @@ from ..utils.methods import generate_hash
 # Determine which Retry parameter to use based on urllib3 version
 # urllib3 < 1.26 uses 'method_whitelist'
 # urllib3 >= 1.26 uses 'allowed_methods'
+_use_method_whitelist = True  # Default for Python 2.7/Kodi 18 compatibility
+_version_detection_error = None
+
 try:
     import urllib3
     # Extract only numeric parts to handle pre-release versions (e.g., '1.26.0rc1')
@@ -44,8 +47,9 @@ try:
         _urllib3_version = (int(major), int(minor), int(patch) if patch else 0)
         _use_method_whitelist = _urllib3_version < (1, 26, 0)
     else:
-        raise ValueError('Could not parse urllib3 version: {0}'.format(urllib3.__version__))
-except (ImportError, ValueError, AttributeError):
+        _version_detection_error = 'Could not parse urllib3 version: {0}'.format(urllib3.__version__)
+        raise ValueError(_version_detection_error)
+except (ImportError, ValueError, AttributeError) as exc:
     # If we can't determine the version, try to detect based on requests version
     # requests < 2.25 (including 2.21.0 for Kodi 18) uses urllib3 < 1.26 which needs method_whitelist
     # requests >= 2.25 can use urllib3 >= 1.26 which needs allowed_methods
@@ -56,11 +60,14 @@ except (ImportError, ValueError, AttributeError):
         if version_match:
             _requests_version = tuple(map(int, version_match.groups()))
             _use_method_whitelist = _requests_version < (2, 25)
+            _version_detection_error = None  # Successfully detected from requests
         else:
-            raise ValueError('Could not parse requests version: {0}'.format(requests.__version__))
+            _version_detection_error = 'Could not parse requests version: {0}'.format(requests.__version__)
+            raise ValueError(_version_detection_error)
     except (ImportError, ValueError, AttributeError):
         # Default to method_whitelist for Python 2.7/Kodi 18 compatibility
-        _use_method_whitelist = True
+        # This is already set above
+        pass
 
 
 __all__ = (
@@ -186,6 +193,12 @@ class CustomSession(Session):
 
 class BaseRequestsClass(object):
     log = logging.getLogger(__name__)
+
+    # Log version detection error if any
+    if _version_detection_error:
+        log.debug('Retry parameter version detection: {0}, '
+                  'using default method_whitelist for compatibility',
+                  _version_detection_error)
 
     _session = CustomSession()
     atexit_register(_session.close)
