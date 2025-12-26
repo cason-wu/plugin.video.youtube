@@ -35,15 +35,27 @@ from ..utils.methods import generate_hash
 # urllib3 >= 1.26 uses 'allowed_methods'
 try:
     import urllib3
-    _urllib3_version = tuple(map(int, urllib3.__version__.split('.')))
-    _use_method_whitelist = _urllib3_version < (1, 26, 0)
+    import re
+    # Extract only numeric parts to handle pre-release versions (e.g., '1.26.0rc1')
+    version_match = re.match(r'(\d+)\.(\d+)\.(\d+)', urllib3.__version__)
+    if version_match:
+        _urllib3_version = tuple(map(int, version_match.groups()))
+        _use_method_whitelist = _urllib3_version < (1, 26, 0)
+    else:
+        raise ValueError('Could not parse urllib3 version')
 except (ImportError, ValueError, AttributeError):
     # If we can't determine the version, try to detect based on requests version
     # requests 2.21.0 (Kodi 18) uses urllib3 ~1.24-1.25 which needs method_whitelist
     try:
         import requests
-        _requests_version = tuple(map(int, requests.__version__.split('.')[:2]))
-        _use_method_whitelist = _requests_version < (2, 26)
+        import re
+        # Extract only numeric parts to handle pre-release versions
+        version_match = re.match(r'(\d+)\.(\d+)', requests.__version__)
+        if version_match:
+            _requests_version = tuple(map(int, version_match.groups()))
+            _use_method_whitelist = _requests_version < (2, 26)
+        else:
+            raise ValueError('Could not parse requests version')
     except (ImportError, ValueError, AttributeError):
         # Default to method_whitelist for Python 2.7/Kodi 18 compatibility
         _use_method_whitelist = True
