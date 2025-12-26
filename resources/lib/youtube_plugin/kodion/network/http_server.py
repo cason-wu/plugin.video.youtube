@@ -27,7 +27,7 @@ from json import dumps as json_dumps, loads as json_loads
 from select import select
 from textwrap import dedent
 
-from urllib3.exceptions import HTTPError
+from urllib3.exceptions import HTTPError, IncompleteRead, ProtocolError
 
 from .requests import BaseRequestsClass
 from .. import logging
@@ -179,10 +179,10 @@ class RequestHandler(BaseHTTPRequestHandler, object):
         try:
             super(RequestHandler, self).handle_one_request()
             return
-        except (HTTPError, OSError) as exc:
+        except (HTTPError, IncompleteRead, ProtocolError, OSError) as exc:
             self.close_connection = True
             self.log.exception('Request failed')
-            if (isinstance(exc, HTTPError)
+            if (isinstance(exc, (HTTPError, IncompleteRead, ProtocolError))
                     or getattr(exc, 'errno', None) in self.SWALLOWED_ERRORS):
                 return
             raise exc
