@@ -37,19 +37,21 @@ from ..utils.methods import generate_hash
 try:
     import urllib3
     # Extract only numeric parts to handle pre-release versions (e.g., '1.26.0rc1')
-    version_match = re.match(r'(\d+)\.(\d+)\.(\d+)', urllib3.__version__)
+    # Match at least major.minor, optionally patch
+    version_match = re.match(r'(\d+)\.(\d+)(?:\.(\d+))?', urllib3.__version__)
     if version_match:
-        _urllib3_version = tuple(map(int, version_match.groups()))
+        major, minor, patch = version_match.groups()
+        _urllib3_version = (int(major), int(minor), int(patch) if patch else 0)
         _use_method_whitelist = _urllib3_version < (1, 26, 0)
     else:
         raise ValueError('Could not parse urllib3 version')
 except (ImportError, ValueError, AttributeError):
     # If we can't determine the version, try to detect based on requests version
-    # requests < 2.25.0 (including 2.21.0 for Kodi 18) uses urllib3 < 1.26 which needs method_whitelist
-    # requests >= 2.25.0 can use urllib3 >= 1.26 which needs allowed_methods
+    # requests < 2.25 (including 2.21.0 for Kodi 18) uses urllib3 < 1.26 which needs method_whitelist
+    # requests >= 2.25 can use urllib3 >= 1.26 which needs allowed_methods
     try:
         import requests
-        # Extract only numeric parts to handle pre-release versions
+        # Extract major.minor for requests version (patch version not significant for this check)
         version_match = re.match(r'(\d+)\.(\d+)', requests.__version__)
         if version_match:
             _requests_version = tuple(map(int, version_match.groups()))
