@@ -49,7 +49,7 @@ try:
     else:
         _version_detection_error = 'Could not parse urllib3 version: {0}'.format(urllib3.__version__)
         raise ValueError(_version_detection_error)
-except (ImportError, ValueError, AttributeError) as exc:
+except (ImportError, ValueError, AttributeError):
     # If we can't determine the version, try to detect based on requests version
     # requests < 2.25 (including 2.21.0 for Kodi 18) uses urllib3 < 1.26 which needs method_whitelist
     # requests >= 2.25 can use urllib3 >= 1.26 which needs allowed_methods
